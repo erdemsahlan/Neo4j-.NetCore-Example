@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="site.css">
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/52260cd1ed.js" crossorigin="anonymous"></script>
+    <title>Neo4j Sample</title>
+</head>
+
+<body>
+    <div class="p-5">
+
+        <div class="row mb-3 underline">
+            <div class="col-6">
+                <div id="div_search" class="input-group">
+                    <div class="input-group-text">
+                        <span><i class="fa-solid fa-magnifying-glass"></i></span>
+                    </div>
+                    <input type="text" id="search" name="search" maxlength="20" placeholder="Movie name" class="form-control" />
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="btn-group" style="margin-left:15px" role="group">
+                    <button class="btn btn-info" id="btn_cancel">Cancel</button>
+                    <button class="btn btn-success" id="btn_search">Search</button>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-5">
+                <div class="panel panel-default">
+                    <div class="panel-heading">Search Results</div>
+                    <table id="results" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Movie</th>
+                                <th>Released</th>
+                                <th>Tagline</th>
+                                <th>Votes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="panel panel-default">
+                    <div class="panel-heading" id="title">Details</div>
+                    <div class="row">
+                        <div class="col-12 p-4">
+                            <h3 id="h3title">Movie Crew</h3>
+                            <hr />
+                            <div id="crew" >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <style type="text/css">
+        .node {
+            stroke: #222;
+            stroke-width: 1.5px;
+        }
+
+            .node.actor {
+                fill: #888;
+            }
+
+            .node.movie {
+                fill: #BBB;
+            }
+
+        .link {
+            stroke: #999;
+            stroke-opacity: .6;
+            stroke-width: 1px;
+        }
+        body, .form-control,.btn {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+        }
+        .underline {
+            border-bottom: 1px solid #BBB;
+            padding-bottom: 20px; /* İsteğe bağlı: Çizginin div'den biraz aşağıda olmasını sağlar */
+        }
+    </style>
+
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript">
+
+        function showMovie(title) {
+            $.get("/movie/" + encodeURIComponent(title),
+                function (data) {
+                    console.log(data); 
+                    if (!data) return;
+                    $("#h3title").html(title + " Movie Crew");
+                    $("#title").text(data.title);
+                    const $list = $("#crew");
+                    $("#crew").html("");
+                    data.cast.forEach(function (cast) {
+                        $list.append($("<p>"+cast.name + " " + cast.job + (cast.job == "acted" ? " as " + cast.role : "")+"</p>"));
+                    });
+                    $("#vote")
+                        .unbind("click")
+                        .click(function () {
+                            voteInMovie(data.title)
+                        });
+                }, "json");
+            return false;
+        }
+        function search(showFirst = true) {
+
+            const query = $("#search").val();
+            $.get("/search?q=" + encodeURIComponent(query),
+                function (data) {
+                   const t = $("table#results tbody").empty();
+                    if (!data || data.length == 0) return;
+                    data.forEach(function (movie, index) {
+
+                        $("<tr><td class='movie'>" + movie.title
+                            + "</td><td>" + movie.released
+                            + "</td><td>" + movie.tagline
+                            + "</td><td id='votes" + index + "'>" + (movie.votes || 0)
+                            + "</td></tr>").appendTo(t)
+                            .click(function () { showMovie($(this).find("td.movie").text()); })
+                    });
+
+                    if (showFirst) {
+                        showMovie(data[0].title);
+                    }
+                }, "json");
+            
+            return false;
+        }
+
+        $(document).on("click", "#btn_search", function (e) {
+            search();
+        });
+    </script>
+
+</body>
+</html>
